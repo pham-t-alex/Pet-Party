@@ -190,16 +190,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  Interacting:
+    m_InternalValue: 0
   interactkey: 101
   interactRange:
     m_InternalValue: 5
-  activeTime:
-    m_InternalValue: 5
   InteractionCooldown: 1
-  debug: 1
   prompt: {fileID: 0}
-  interactkeyText: {fileID: 0}
-  promptName: {fileID: 0}
+  debug: 1
 --- !u!114 &117843581438611231
 MonoBehaviour:
   m_ObjectHideFlags: 0
