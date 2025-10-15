@@ -7,15 +7,19 @@ public class PlayerNetworkBehaviour : NetworkBehaviour
     [SerializeField] private float moveSpeed = 6f;
     private Vector2 movementInput;
 
+    private PlayerInteract playerInteraction;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-
+        playerInteraction = this.GetComponent<PlayerInteract>();
     }
 
     // Update is called once per frame
     void Update()
     {
+        playerInteraction.InteractEvent();
+
         if (!IsServer) return;
         transform.Translate(movementInput * moveSpeed * Time.deltaTime);
     }

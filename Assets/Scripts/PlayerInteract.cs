@@ -8,12 +8,18 @@ using static UnityEngine.UI.Image;
 
 public class PlayerInteract : NetworkBehaviour
 {
+    public NetworkVariable<bool> Interacting = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    
+    
     [Header("Interaction Settings")]
     [SerializeField] private KeyCode interactkey = KeyCode.E;
-    [SerializeField] private NetworkVariable<float> interactRange = new NetworkVariable<float>(5, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    [SerializeField] private NetworkVariable<float> activeTime = new NetworkVariable<float>(5, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    [SerializeField] private float InteractionCooldown = 1;
 
+    //This probably doesn't need to be a network variable since it will only
+    // affect the prompt distance and the server does its own distance calculation on its side
+    [SerializeField] private NetworkVariable<float> interactRange = new NetworkVariable<float>(5, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    [SerializeField] private float InteractionCooldown = 1;
+    
+    private NetworkVariable<float> activeTime = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     [Header("UI Prompt")]
     [SerializeField] private GameObject prompt;
@@ -28,7 +34,6 @@ public class PlayerInteract : NetworkBehaviour
 
     List<GameObject> interactables;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
     {
         prompt = GameObject.Find("GenericInteractPrompt");
@@ -55,9 +60,13 @@ public class PlayerInteract : NetworkBehaviour
         if(debug)
             Debug.Log(interactables.Count());
     }
-
     // Update is called once per frame
     void Update()
+    {
+        //InteractEvent();
+
+    }
+    public void InteractEvent()
     {
         if (IsServer && activeTime.Value >= 0)
         {
@@ -77,9 +86,8 @@ public class PlayerInteract : NetworkBehaviour
             }
             TryFindClosestInteractableServerRpc();
         }
-
-
     }
+
     private void OnDrawGizmos()
     {
 
@@ -187,6 +195,9 @@ public class PlayerInteract : NetworkBehaviour
             }
         }
 
-        if (ret != null) ret.GetComponent<IInteract>().Interact(this.gameObject);
+        if (ret != null) { 
+            Interacting.Value = true;
+            ret.GetComponent<IInteract>().Interact(this.gameObject);
+        }
     }
 }
