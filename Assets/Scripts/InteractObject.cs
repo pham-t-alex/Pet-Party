@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class InteractObject : NetworkBehaviour , IInteract
 {
-    public string Name { get; private set; }
+    public GameObject GetGameObject() => this.gameObject;
 
     public void Interact(GameObject interactor) 
     {

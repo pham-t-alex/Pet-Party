@@ -1,52 +1,192 @@
+using NUnit.Framework;
+using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using static UnityEngine.UI.Image;
 
 public class PlayerInteract : NetworkBehaviour
 {
+    [Header("Interaction Settings")]
     [SerializeField] private KeyCode interactkey = KeyCode.E;
-    [SerializeField] private float interactRange = 10f;
+    [SerializeField] private NetworkVariable<float> interactRange = new NetworkVariable<float>(5, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    [SerializeField] private NetworkVariable<float> activeTime = new NetworkVariable<float>(5, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    [SerializeField] private float InteractionCooldown = 1;
 
+
+    [Header("UI Prompt")]
+    [SerializeField] private GameObject prompt;
+    private TextMeshProUGUI interactkeyText;
+    private TextMeshProUGUI promptName;
+
+    [Header("Debug")]
     [SerializeField] private bool debug = true;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
 
+    private bool promptShown = false;
+    private GameObject ClosestPromptable;
+
+    List<GameObject> interactables;
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Awake()
+    {
+        prompt = GameObject.Find("GenericInteractPrompt");
+
+        if (prompt)
+        {
+            prompt.SetActive(false);
+
+            interactkeyText = prompt.transform.Find("Interact Button").GetComponent<TextMeshProUGUI>();
+            promptName = prompt.transform.Find("Name of Interactable").GetComponent<TextMeshProUGUI>();
+        }
+        else
+        {
+            Debug.Log("Missing \"Generic Interaction Prompt\" on the Canvas!");
+        }
+
+
+        //Finds all objects with the IInteract interface and caches it as their gameobject
+        interactables = FindObjectsByType<NetworkBehaviour>(FindObjectsSortMode.None)
+            .OfType<IInteract>()
+            .Select(i => i.GetGameObject())
+            .ToList();
+        
+        if(debug)
+            Debug.Log(interactables.Count());
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (IsServer && activeTime.Value >= 0)
+        {
+            activeTime.Value -= Time.deltaTime;
+        }
+
         if (!IsOwner) return;
 
-        if (Input.GetKeyDown(interactkey))
+
+        DisplayPrompt();
+
+        if (Input.GetKeyDown(interactkey) && ClosestPromptable && activeTime.Value <= 0)
         {
             if (debug)
             {
                 Debug.Log($"{gameObject.name} pressed {interactkey}");
-
             }
-            TryInteractServerRpc();
+            TryFindClosestInteractableServerRpc();
         }
+
+
     }
     private void OnDrawGizmos()
     {
 
         Gizmos.color = Color.magenta;
-        Gizmos.DrawWireSphere(transform.position, interactRange);
+        Gizmos.DrawWireSphere(transform.position, interactRange.Value);
     }
 
-    [Rpc(SendTo.Server)]
-    void TryInteractServerRpc()
-    {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, interactRange);
 
-        foreach (Collider2D hit in hits)
+    private void DisplayPrompt()
+    {
+        GameObject Interactable = TryFindClosestInteractable();
+        if (debug)
         {
-            if (hit.TryGetComponent<IInteract>(out var interactable))
+            if (Interactable != null)
             {
-                Debug.Log($"Caught {this.name}");
-                interactable.Interact(this.gameObject);
+               Debug.Log($"Found Interactable : {Interactable.name}");
+            }
+            else
+            {
+               Debug.Log($"Found Interactable : null");
+
             }
         }
+
+        //Since there is only ever one prompt on the screen (closest object)
+        //  We can keep one on the hierarchy at all times 
+        if (Interactable != ClosestPromptable)
+        {
+            ClosestPromptable = Interactable;
+            if (Interactable)
+            {
+                OpenPrompt(Interactable.name, interactkey.ToString());
+            }
+            else
+            {
+                ClosePrompt();
+            }
+        
+        }
+
+        //Makes the prompt follow the object
+        if (promptShown) 
+            prompt.transform.position = Camera.main.WorldToScreenPoint(Interactable.transform.position);
+            
+        
+    }
+    private void OpenPrompt(string _name, string _interactkey)
+    {
+        if (!prompt) return;
+
+        prompt.SetActive(true);
+        promptName.text = _name;
+        interactkeyText.text = _interactkey;
+        promptShown = true;
+        
+    }
+
+    private void ClosePrompt()
+    {
+        if (!prompt) return;
+        prompt.SetActive(false);
+        promptShown = false;
+    }
+    private GameObject TryFindClosestInteractable()
+    {
+
+        GameObject ret = null;
+        float closest = Mathf.Infinity;
+        foreach (GameObject interactable in interactables)
+        {
+
+            //Skips if object is gone
+            if (interactable == null) continue; 
+
+            float distance = Vector2.Distance(transform.position, interactable.transform.position);
+            if (distance < closest && distance < interactRange.Value)
+            {
+                ret = interactable;
+                closest = distance;
+            }
+        }
+
+        return ret;
+    }
+    [Rpc(SendTo.Server)]
+    private void TryFindClosestInteractableServerRpc()
+    {
+        if (activeTime.Value > 0) return;
+
+        GameObject ret = null;
+        float closest = Mathf.Infinity;
+        foreach (GameObject interactable in interactables)
+        {
+
+            //Skips if object has been destroyed or inactive
+            if (interactable == null || !interactable.activeSelf) continue;
+
+            float distance = Vector2.Distance(transform.position, interactable.transform.position);
+            if (distance < closest && distance < interactRange.Value)
+            {
+                ret = interactable;
+                closest = distance;
+
+                activeTime.Value = InteractionCooldown;
+            }
+        }
+
+        if (ret != null) ret.GetComponent<IInteract>().Interact(this.gameObject);
     }
 }

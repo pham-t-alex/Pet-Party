@@ -4,6 +4,15 @@ using UnityEngine;
 public class InteractObject2 : NetworkBehaviour, IInteract
 {
     [SerializeField] GameObject prefab;
+    public void Start()
+    {
+
+    }
+
+    public GameObject GetGameObject()
+    {
+        return this.gameObject;
+    }
     public void Interact(GameObject interactor)
     {
         Debug.Log($"{gameObject.name} has been interacted!");
@@ -16,4 +25,5 @@ public class InteractObject2 : NetworkBehaviour, IInteract
         go.GetComponent<SpriteRenderer>().material.color = Random.ColorHSV();
         go.GetComponent<NetworkObject>().Spawn();
     }
+
 }
