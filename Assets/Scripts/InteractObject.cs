@@ -9,7 +9,10 @@ public class InteractObject : NetworkBehaviour , IInteract
     {
         Debug.Log($"{gameObject.name} has been interacted!");
 
-        Destroy(this.gameObject);
+        if (this.NetworkObject != null && this.NetworkObject.IsSpawned)
+        {
+            this.NetworkObject.Despawn(true);
+        }
     
     }
 }

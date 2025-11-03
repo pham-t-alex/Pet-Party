@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -23,6 +24,7 @@ public class PlayerInteract : NetworkBehaviour
 
     [Header("UI Prompt")]
     [SerializeField] private GameObject prompt;
+    private string promptPrefabPath = "Prefabs/GenericInteractPrompt";
     private TextMeshProUGUI interactkeyText;
     private TextMeshProUGUI promptName;
 
@@ -34,10 +36,41 @@ public class PlayerInteract : NetworkBehaviour
 
     List<GameObject> interactables;
 
-    void Awake()
+    public void Awake()
     {
-        prompt = GameObject.Find("GenericInteractPrompt");
+        EnsurePromptExists();
 
+
+        //Finds all objects with the IInteract interface and caches it as their gameobject
+        interactables = FindObjectsByType<NetworkBehaviour>(FindObjectsSortMode.None)
+            .OfType<IInteract>()
+            .Select(i => i.GetGameObject())
+            .ToList();
+
+        if (debug)
+            Debug.Log(interactables.Count());
+    }
+
+    void EnsurePromptExists()
+    {
+
+            if (prompt == null)
+            {
+                var prefab = Resources.Load<GameObject>(promptPrefabPath);
+                if (prefab != null)
+                {
+                    GameObject canvas = GameObject.Find("Canvas");
+                    prompt = Instantiate(prefab, canvas.transform);
+                    
+                prompt.name = "GenericInteractPrompt";
+                    Debug.Log("Spawned local prompt UI from Resources");
+                }
+                else
+                {
+                Debug.LogError($"Missing UI prefab at Resources/{promptPrefabPath}.prefab");
+                return;
+                }
+            }
         if (prompt)
         {
             prompt.SetActive(false);
@@ -50,15 +83,6 @@ public class PlayerInteract : NetworkBehaviour
             Debug.Log("Missing \"Generic Interaction Prompt\" on the Canvas!");
         }
 
-
-        //Finds all objects with the IInteract interface and caches it as their gameobject
-        interactables = FindObjectsByType<NetworkBehaviour>(FindObjectsSortMode.None)
-            .OfType<IInteract>()
-            .Select(i => i.GetGameObject())
-            .ToList();
-        
-        if(debug)
-            Debug.Log(interactables.Count());
     }
     // Update is called once per frame
     void Update()
@@ -194,8 +218,9 @@ public class PlayerInteract : NetworkBehaviour
                 activeTime.Value = InteractionCooldown;
             }
         }
-
-        if (ret != null) { 
+             
+        if (ret != null) {
+            Debug.Log("Interacting!!!");
             Interacting.Value = true;
             ret.GetComponent<IInteract>().Interact(this.gameObject);
         }
