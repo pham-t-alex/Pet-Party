@@ -1,7 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
-using System;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class Player : NetworkBehaviour
@@ -44,8 +43,13 @@ public class Player : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        if (remainingKnockbackTime > 0)remainingKnockbackTime -= Time.fixedDeltaTime;
-        rb.linearVelocity = remainingKnockbackTime > 0 ? (moveSpeed * movementInput + knockbackImpulse * (remainingKnockbackTime / attackKnockbackTime)) : moveSpeed * movementInput;
+        remainingKnockbackTime = Mathf.Max(0f, remainingKnockbackTime - Time.fixedDeltaTime);
+        Vector2 move = Vector2.ClampMagnitude(movementInput, 1f) * moveSpeed;
+        float k = (attackKnockbackTime > 0f)
+            ? (remainingKnockbackTime / attackKnockbackTime)
+            : 0f;
+        Vector2 kb = knockbackImpulse * k;
+        rb.linearVelocity = kb + move;
     }
 
     void OnDrawGizmos()
@@ -67,22 +71,16 @@ public class Player : NetworkBehaviour
     public void OnAttack(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) return;
-        if (ctx.performed && Time.time > nextAttackTime)
+        if (ctx.performed)
         {
-            nextAttackTime = Time.time + attackCooldown;
-            Vector2 direction = ((Vector2) cam.ScreenToWorldPoint(Mouse.current.position.ReadValue()) - (Vector2) transform.position).normalized;
-            RaycastHit2D hit = Physics2D.CircleCast((Vector2) transform.position + direction * attackRange, attackSize, Vector2.up);
-            if (hit.collider != null)
-            {
-                Vector2 knockbackDirection = ((Vector2)hit.collider.transform.position - (Vector2)transform.position).normalized;
-                hit.collider.GetComponentInParent<Player>().OnHit(knockbackDirection);
-            }
+            Vector2 direction = ((Vector2)cam.ScreenToWorldPoint(Mouse.current.position.ReadValue()) - (Vector2)transform.position).normalized;
+            AttackRpc(direction);
         }
     }
 
-    public void OnHit(Vector2 direction)
+    public void OnHit()
     {
-        OnHitRpc(direction, attackKnockbackForce);
+        Debug.Log("Player has been hit");
     }
 
     [Rpc(SendTo.Server)]
@@ -92,9 +90,29 @@ public class Player : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    public void OnHitRpc(Vector2 direction, float knockbackAmount)
+    public void AttackRpc(Vector2 direction)
     {
-        knockbackImpulse = direction.normalized * knockbackAmount;
+        if (Time.time > nextAttackTime) {
+            nextAttackTime = Time.time + attackCooldown;
+
+            RaycastHit2D hit = Physics2D.CircleCast((Vector2) transform.position + direction * attackRange, attackSize, Vector2.up);
+            if (hit.collider != null)
+            {
+                Vector2 knockbackDirection = ((Vector2)hit.collider.transform.position - (Vector2)transform.position).normalized;
+                var targetPlayer = hit.collider.GetComponentInParent<Player>();
+                if (targetPlayer != null)
+                {
+                    targetPlayer.ApplyKbRpc(knockbackDirection, attackKnockbackForce);
+                    targetPlayer.OnHit();
+                }
+            }
+        }
+    }
+
+    public void ApplyKbRpc(Vector2 direction, float knockbackAmount)
+    {
+        Vector2 impulse = direction.normalized * knockbackAmount;
+        knockbackImpulse = impulse;
         remainingKnockbackTime = attackKnockbackTime;
     }
 
