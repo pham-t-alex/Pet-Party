@@ -4,29 +4,28 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
-using static UnityEngine.UI.Image;
+using UnityEngine.InputSystem;
 
 public class PlayerInteract : NetworkBehaviour
 {
-    public NetworkVariable<bool> Interacting = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<bool> Interacting = new NetworkVariable<bool>(false);
     
     
     [Header("Interaction Settings")]
-    [SerializeField] private KeyCode interactkey = KeyCode.E;
-
     //This probably doesn't need to be a network variable since it will only
     // affect the prompt distance and the server does its own distance calculation on its side
     [SerializeField] private NetworkVariable<float> interactRange = new NetworkVariable<float>(5, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     [SerializeField] private float InteractionCooldown = 1;
-    
-    private NetworkVariable<float> activeTime = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private float activeTime = 0;
 
     [Header("UI Prompt")]
-    [SerializeField] private GameObject prompt;
-    private string promptPrefabPath = "Prefabs/GenericInteractPrompt";
+    [SerializeField] private GameObject promptprefab;
+    private GameObject prompt;
     private TextMeshProUGUI interactkeyText;
     private TextMeshProUGUI promptName;
+    GameObject canvas;
 
     [Header("Debug")]
     [SerializeField] private bool debug = true;
@@ -34,43 +33,52 @@ public class PlayerInteract : NetworkBehaviour
     private bool promptShown = false;
     private GameObject ClosestPromptable;
 
-    List<GameObject> interactables;
+    private static NetworkList<NetworkObjectReference> interactablesRefs;
 
-    public void Awake()
+    void Awake()
     {
+        //if (!IsOwner) return;
         EnsurePromptExists();
 
-
         //Finds all objects with the IInteract interface and caches it as their gameobject
-        interactables = FindObjectsByType<NetworkBehaviour>(FindObjectsSortMode.None)
+        var interactables = FindObjectsByType<NetworkBehaviour>(FindObjectsSortMode.None)
             .OfType<IInteract>()
             .Select(i => i.GetGameObject())
             .ToList();
 
+        interactablesRefs = new NetworkList<NetworkObjectReference>();
+
+        foreach (var netObj in interactables)
+        {
+            interactablesRefs.Add(new NetworkObjectReference(netObj));
+        }
         if (debug)
             Debug.Log(interactables.Count());
+        
     }
 
+    //Add to the list of interactables
+    public void AddInteractables(NetworkObject netobj)
+    {
+        //
+        IInteract interactable;
+        if (!netobj.TryGetComponent<IInteract>(out interactable)) return;
+        interactablesRefs.Add(new NetworkObjectReference(netobj));
+    }
     void EnsurePromptExists()
     {
 
-            if (prompt == null)
-            {
-                var prefab = Resources.Load<GameObject>(promptPrefabPath);
-                if (prefab != null)
-                {
-                    GameObject canvas = GameObject.Find("Canvas");
-                    prompt = Instantiate(prefab, canvas.transform);
-                    
-                prompt.name = "GenericInteractPrompt";
-                    Debug.Log("Spawned local prompt UI from Resources");
-                }
-                else
-                {
-                Debug.LogError($"Missing UI prefab at Resources/{promptPrefabPath}.prefab");
-                return;
-                }
-            }
+        if (prompt == null)
+        {
+
+            canvas = GameObject.Find("Canvas");
+            canvas.GetComponent<Canvas>().sortingOrder = 1;
+            prompt = Instantiate(promptprefab, canvas.transform);
+                
+            if(debug)
+                Debug.Log("Spawned local prompt UI from Resources");
+            
+        }
         if (prompt)
         {
             prompt.SetActive(false);
@@ -87,29 +95,11 @@ public class PlayerInteract : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
-        //InteractEvent();
-
-    }
-    public void InteractEvent()
-    {
-        if (IsServer && activeTime.Value >= 0)
+        if (IsServer)
         {
-            activeTime.Value -= Time.deltaTime;
+            activeTime -= Time.deltaTime;
         }
 
-        if (!IsOwner) return;
-
-
-        DisplayPrompt();
-
-        if (Input.GetKeyDown(interactkey) && ClosestPromptable && activeTime.Value <= 0)
-        {
-            if (debug)
-            {
-                Debug.Log($"{gameObject.name} pressed {interactkey}");
-            }
-            TryFindClosestInteractableServerRpc();
-        }
     }
 
     private void OnDrawGizmos()
@@ -120,21 +110,11 @@ public class PlayerInteract : NetworkBehaviour
     }
 
 
-    private void DisplayPrompt()
+    public void UpdatePromptDisplay(string interactkey)
     {
         GameObject Interactable = TryFindClosestInteractable();
         if (debug)
-        {
-            if (Interactable != null)
-            {
-               Debug.Log($"Found Interactable : {Interactable.name}");
-            }
-            else
-            {
-               Debug.Log($"Found Interactable : null");
-
-            }
-        }
+            Debug.Log($"Found Interactable : {(Interactable ? Interactable.name : "null")}");
 
         //Since there is only ever one prompt on the screen (closest object)
         //  We can keep one on the hierarchy at all times 
@@ -142,19 +122,18 @@ public class PlayerInteract : NetworkBehaviour
         {
             ClosestPromptable = Interactable;
             if (Interactable)
-            {
-                OpenPrompt(Interactable.name, interactkey.ToString());
-            }
+                OpenPrompt(Interactable.name, interactkey);
             else
-            {
                 ClosePrompt();
-            }
-        
         }
 
         //Makes the prompt follow the object
-        if (promptShown) 
-            prompt.transform.position = Camera.main.WorldToScreenPoint(Interactable.transform.position);
+        if (promptShown && Interactable) 
+            //Its boring currently with the prompt directly on the object, 
+            //  could have it "float" between the object and player 
+            //          (could also make the interactable show a glint or outline
+            //              to emphasized that its interactive)
+            prompt.transform.position = Interactable.transform.position;
             
         
     }
@@ -177,10 +156,10 @@ public class PlayerInteract : NetworkBehaviour
     }
     private GameObject TryFindClosestInteractable()
     {
-
+        if (interactablesRefs.Count == 0) return null;
         GameObject ret = null;
         float closest = Mathf.Infinity;
-        foreach (GameObject interactable in interactables)
+        foreach (GameObject interactable in interactablesRefs)
         {
 
             //Skips if object is gone
@@ -197,17 +176,18 @@ public class PlayerInteract : NetworkBehaviour
         return ret;
     }
     [Rpc(SendTo.Server)]
-    private void TryFindClosestInteractableServerRpc()
+    public void TryFindClosestInteractableServerRpc()
     {
-        if (activeTime.Value > 0) return;
-
+        //Checks if the time passed is less than the cooldown time
+        if (activeTime > 0) return;
+        Debug.Log("TryFindClosestInteractableServerRpc");
         GameObject ret = null;
         float closest = Mathf.Infinity;
-        foreach (GameObject interactable in interactables)
+        foreach (GameObject interactable in interactablesRefs)
         {
 
             //Skips if object has been destroyed or inactive
-            if (interactable == null || !interactable.activeSelf) continue;
+            if (interactable == null || interactable.IsDestroyed() || !interactable.activeSelf) continue;
 
             float distance = Vector2.Distance(transform.position, interactable.transform.position);
             if (distance < closest && distance < interactRange.Value)
@@ -215,13 +195,15 @@ public class PlayerInteract : NetworkBehaviour
                 ret = interactable;
                 closest = distance;
 
-                activeTime.Value = InteractionCooldown;
             }
         }
              
         if (ret != null) {
-            Debug.Log("Interacting!!!");
+
+            //Sets current time to active value as "the last time the interaction was used"
+            activeTime = InteractionCooldown;
             Interacting.Value = true;
+            Debug.Log("Interacting!!!");
             ret.GetComponent<IInteract>().Interact(this.gameObject);
         }
     }

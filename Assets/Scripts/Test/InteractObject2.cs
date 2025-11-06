@@ -24,8 +24,16 @@ public class InteractObject2 : NetworkBehaviour, IInteract
         GameObject go = Instantiate(prefab);
         go.transform.position = new Vector3(x, y, 0);
 
+        //The color only changes with the host, the client doesn't see any randomness with colors
+        //  Doesn't really do anything bad now but if we need to change values of this in the future it
+        //  it should be looked at
         go.GetComponent<SpriteRenderer>().material.color = Random.ColorHSV();
         go.GetComponent<NetworkObject>().Spawn();
+
+        //Dynamically adds the object to the list
+        PlayerInteract PI = interactor.GetComponent<PlayerInteract>();
+        PI.Interacting.Value = false;
+        PI.AddInteractables(go.GetComponent<NetworkObject>());
     }
 
 }

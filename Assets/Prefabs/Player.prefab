@@ -177,6 +177,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   moveSpeed: 6
+  playerInput: {fileID: 117843581438611231}
 --- !u!114 &8725574151201812304
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -192,11 +193,10 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   Interacting:
     m_InternalValue: 0
-  interactkey: 101
   interactRange:
     m_InternalValue: 5
   InteractionCooldown: 1
-  prompt: {fileID: 0}
+  promptprefab: {fileID: 4537417193510874013, guid: e5b489b0f47be5842b0193ed2169fc6a, type: 3}
   debug: 1
 --- !u!114 &117843581438611231
 MonoBehaviour:
@@ -249,10 +249,10 @@ MonoBehaviour:
     m_ActionName: 'Player/Attack[/Mouse/leftButton,/Keyboard/enter]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 11500000, guid: 970c41340d5494c46a1cb437514cd43e, type: 3}
-        m_TargetAssemblyTypeName: UnityEditor.MonoScript, UnityEditor.CoreModule
-        m_MethodName: 
-        m_Mode: 1
+      - m_Target: {fileID: 8318377429579098738}
+        m_TargetAssemblyTypeName: PlayerNetworkBehaviour, Assembly-CSharp
+        m_MethodName: OnInteract
+        m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine

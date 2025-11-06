@@ -11,6 +11,7 @@ public class InteractObject : NetworkBehaviour , IInteract
 
         if (this.NetworkObject != null && this.NetworkObject.IsSpawned)
         {
+            interactor.GetComponent<PlayerInteract>().Interacting.Value = false;
             this.NetworkObject.Despawn(true);
         }
     
