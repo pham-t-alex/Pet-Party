@@ -102,14 +102,14 @@ public class Player : NetworkBehaviour
                 var targetPlayer = hit.collider.GetComponentInParent<Player>();
                 if (targetPlayer != null)
                 {
-                    targetPlayer.ApplyKbRpc(knockbackDirection, attackKnockbackForce);
+                    targetPlayer.ApplyKb(knockbackDirection, attackKnockbackForce);
                     targetPlayer.OnHit();
                 }
             }
         }
     }
 
-    public void ApplyKbRpc(Vector2 direction, float knockbackAmount)
+    public void ApplyKb(Vector2 direction, float knockbackAmount)
     {
         Vector2 impulse = direction.normalized * knockbackAmount;
         knockbackImpulse = impulse;
