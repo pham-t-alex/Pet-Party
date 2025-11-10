@@ -7,6 +7,7 @@ public abstract class PetTask
     public int PointValue { get; private set; }
     public float MaxCompletionValue { get; private set; }
 
+    public event Action<float, float> TaskValueUpdatedEvent;
     public event Action TaskCompletedEvent;
     public float CompletionValue { get; private set; }
 
@@ -20,7 +21,9 @@ public abstract class PetTask
 
     protected void UpdateTaskCompletionValue(float newCompletionValue)
     {
+        float prevValue = CompletionValue;
         CompletionValue = Mathf.Clamp(newCompletionValue, Mathf.NegativeInfinity, MaxCompletionValue);
+        TaskValueUpdatedEvent?.Invoke(prevValue, newCompletionValue);
         if (CompletionValue >= MaxCompletionValue)
         {
             TaskCompletedEvent?.Invoke();
