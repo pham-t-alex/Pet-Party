@@ -2,19 +2,38 @@ using UnityEngine;
 
 public class TerritoryControlTask : PetTask
 {
-    public TerritoryControlTask(string taskName, int pointValue, float maxCompletionValue, float startingCompletionValue) : base(taskName, pointValue, maxCompletionValue, startingCompletionValue)
+    private Territory territory;
+    private bool controlling = false;
+
+    public TerritoryControlTask(ulong player, string taskName, int pointValue, float maxCompletionValue, float startingCompletionValue, int id) : base(player, taskName, pointValue, maxCompletionValue, startingCompletionValue)
     {
+        territory = TaskManager.Instance.FindTerritoryById(id);
+        if (territory != null)
+        {
+            territory.TerritoryPlayerUpdatedEvent += HandleTerritoryPlayerUpdate;
+            HandleTerritoryPlayerUpdate();
+        }
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    void HandleTerritoryPlayerUpdate()
     {
-        
+        if (territory.PlayersInTerritory.Count == 1 && territory.PlayersInTerritory.Contains(Player))
+        {
+            controlling = true;
+        }
+        else
+        {
+            controlling = false;
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    public override void Tick(float deltaTime)
     {
-        
+        base.Tick(deltaTime);
+        if (controlling)
+        {
+            UpdateTaskCompletionValue(CompletionValue + Time.deltaTime);
+            Debug.Log($"Controlling: {CompletionValue}");
+        }
     }
 }

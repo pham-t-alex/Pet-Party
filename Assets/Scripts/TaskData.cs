@@ -12,5 +12,5 @@ public abstract class TaskData : ScriptableObject
     [field: SerializeField, Tooltip("Task starting value")]
     public float StartCompletionValue { get; private set; }
 
-    public abstract PetTask CreateTask();
+    public abstract PetTask CreateTask(ulong player);
 }
