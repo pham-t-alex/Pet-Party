@@ -84,7 +84,6 @@ public class Player : NetworkBehaviour
         playerInteraction.TryFindClosestInteractableServerRpc();
     }
 
-    [Rpc(SendTo.Server)]
     public void OnAttack(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) return;

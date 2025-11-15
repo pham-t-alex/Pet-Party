@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 2379572967322200932}
   - component: {fileID: 8339707633248827675}
   - component: {fileID: 117843581438611231}
+  - component: {fileID: 4947523452032919712}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -79,8 +80,10 @@ MonoBehaviour:
   moveSpeed: 6
   attackRange: 1.2
   attackSize: 0.5
+  attackCooldown: 1
   attackKnockbackForce: 10
   attackKnockbackTime: 0.2
+  playerInput: {fileID: 117843581438611231}
 --- !u!61 &-6017029326583106284
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -318,8 +321,8 @@ MonoBehaviour:
     m_ActionName: 'Player/Attack[/Mouse/leftButton,/Keyboard/enter]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 8318377429579098738}
-        m_TargetAssemblyTypeName: PlayerNetworkBehaviour, Assembly-CSharp
+      - m_Target: {fileID: 5494649957070902606}
+        m_TargetAssemblyTypeName: Player, Assembly-CSharp
         m_MethodName: OnInteract
         m_Mode: 0
         m_Arguments:
@@ -397,3 +400,23 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &4947523452032919712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4519532081558418681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 970c41340d5494c46a1cb437514cd43e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  Interacting:
+    m_InternalValue: 0
+  interactRange:
+    m_InternalValue: 5
+  InteractionCooldown: 1
+  promptprefab: {fileID: 4537417193510874013, guid: e5b489b0f47be5842b0193ed2169fc6a, type: 3}
+  debug: 1
