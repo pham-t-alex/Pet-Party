@@ -317,7 +317,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f720b867d2ace46a5b3d419a0f7cd1b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  affectionBar: {fileID: 0}
+  affectionBar: {fileID: 1146013075}
 --- !u!114 &1210108245
 MonoBehaviour:
   m_ObjectHideFlags: 0
