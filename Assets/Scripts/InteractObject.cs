@@ -3,13 +3,17 @@ using UnityEngine;
 
 public class InteractObject : NetworkBehaviour , IInteract
 {
-    public string Name { get; private set; }
+    public GameObject GetGameObject() => this.gameObject;
 
     public void Interact(GameObject interactor) 
     {
         Debug.Log($"{gameObject.name} has been interacted!");
 
-        Destroy(this.gameObject);
+        if (this.NetworkObject != null && this.NetworkObject.IsSpawned)
+        {
+            interactor.GetComponent<PlayerInteract>().Interacting.Value = false;
+            this.NetworkObject.Despawn(true);
+        }
     
     }
 }
