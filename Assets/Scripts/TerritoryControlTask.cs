@@ -5,9 +5,9 @@ public class TerritoryControlTask : PetTask
     private Territory territory;
     private bool controlling = false;
 
-    public TerritoryControlTask(ulong player, string taskName, int pointValue, float maxCompletionValue, float startingCompletionValue, int id) : base(player, taskName, pointValue, maxCompletionValue, startingCompletionValue)
+    public TerritoryControlTask(ulong player, int taskId, string taskName, int pointValue, float maxCompletionValue, float startingCompletionValue, int territoryId) : base(player, taskId, taskName, pointValue, maxCompletionValue, startingCompletionValue)
     {
-        territory = TaskManager.Instance.FindTerritoryById(id);
+        territory = TaskManager.Instance.FindTerritoryById(territoryId);
         if (territory != null)
         {
             territory.TerritoryPlayerUpdatedEvent += HandleTerritoryPlayerUpdate;
@@ -33,7 +33,12 @@ public class TerritoryControlTask : PetTask
         if (controlling)
         {
             UpdateTaskCompletionValue(CompletionValue + Time.deltaTime);
-            Debug.Log($"Controlling: {CompletionValue}");
         }
+    }
+
+    protected override void CompleteTaskCleanup()
+    {
+        base.CompleteTaskCleanup();
+        if (territory != null) territory.TerritoryPlayerUpdatedEvent -= HandleTerritoryPlayerUpdate;
     }
 }

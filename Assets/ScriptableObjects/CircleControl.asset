@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c16006306c00f0645b8584787e0acb36, type: 3}
-  m_Name: TerritoryControlTaskData
+  m_Name: CircleControl
   m_EditorClassIdentifier: 
-  <TaskName>k__BackingField: Territory Control
-  <PointValue>k__BackingField: 5
-  <MaxCompletionValue>k__BackingField: 10
+  <TaskName>k__BackingField: Circle Control
+  <PointValue>k__BackingField: 2
+  <MaxCompletionValue>k__BackingField: 5
   <StartCompletionValue>k__BackingField: 0
-  <TerritoryId>k__BackingField: 0
+  <TerritoryId>k__BackingField: 1

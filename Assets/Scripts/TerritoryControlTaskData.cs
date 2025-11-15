@@ -7,9 +7,9 @@ public class TerritoryControlTaskData : TaskData
     [field: SerializeField, Tooltip("Territory Id")]
     public int TerritoryId { get; private set; }
 
-    public override PetTask CreateTask(ulong player)
+    public override PetTask CreateTask(ulong player, int taskId)
     {
-        TerritoryControlTask task = new TerritoryControlTask(player, TaskName, PointValue, MaxCompletionValue, StartCompletionValue, TerritoryId);
+        TerritoryControlTask task = new TerritoryControlTask(player, taskId, TaskName, PointValue, MaxCompletionValue, StartCompletionValue, TerritoryId);
         return task;
     }
 
