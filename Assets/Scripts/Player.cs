@@ -26,9 +26,13 @@ public class Player : NetworkBehaviour
     private float remainingKnockbackTime = 0f;
     private float nextAttackTime;
 
+    [SerializeField] private PlayerInput playerInput;
+    private PlayerInteract playerInteraction;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        playerInteraction = this.GetComponent<PlayerInteract>();
         rb = GetComponent<Rigidbody2D>();
         cam = Camera.main;
     }
@@ -36,6 +40,10 @@ public class Player : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (IsOwner)
+        {
+            playerInteraction.UpdatePromptDisplay(playerInput.actions["Interact"].bindings[0].ToDisplayString());
+        }
         
     }
 
@@ -68,6 +76,15 @@ public class Player : NetworkBehaviour
         MoveRpc(ctx.ReadValue<Vector2>());
     }
 
+    public void OnInteract(InputAction.CallbackContext ctx) 
+    {
+        if(!IsOwner || !ctx.performed) return;
+
+        Debug.Log($"Hi hi I'm interacting key: {playerInput.actions["Interact"].bindings[0].ToDisplayString()}");
+        playerInteraction.TryFindClosestInteractableServerRpc();
+    }
+
+    [Rpc(SendTo.Server)]
     public void OnAttack(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) return;
