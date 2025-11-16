@@ -24,7 +24,7 @@ public class Territory : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (!NetworkManager.Singleton.IsServer) return;
-        if (collision.gameObject.GetComponent<PlayerNetworkBehaviour>() != null)
+        if (collision.gameObject.GetComponent<Player>() != null)
         {
             PlayersInTerritory.Add(collision.gameObject.GetComponent<NetworkObject>().OwnerClientId);
         }
@@ -34,7 +34,7 @@ public class Territory : MonoBehaviour
     private void OnTriggerExit2D(Collider2D collision)
     {
         if (!NetworkManager.Singleton.IsServer) return;
-        if (collision.gameObject.GetComponent<PlayerNetworkBehaviour>() != null)
+        if (collision.gameObject.GetComponent<Player>() != null)
         {
             PlayersInTerritory.Remove(collision.gameObject.GetComponent<NetworkObject>().OwnerClientId);
         }

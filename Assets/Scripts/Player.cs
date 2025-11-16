@@ -189,6 +189,7 @@ public class Player : NetworkBehaviour
     public void AddAffectionRpc(float amount)
         => affection.Value = Mathf.Clamp(affection.Value + amount, 0f, maxAffection);
 
+    [Rpc(SendTo.Server)]
     public void AttackRpc(Vector2 direction)
     {
         if (Time.time > nextAttackTime) {
